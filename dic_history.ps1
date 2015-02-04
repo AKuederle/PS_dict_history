@@ -1,37 +1,24 @@
-function numInstances([string]$process)
-{
-    @(get-process -ea silentlycontinue $process).count
-}
+# get the current process id and format it respectively
+$id = [System.Diagnostics.Process]::GetCurrentProcess() | Format-Wide -Property id | Out-String
+$id = $id.replace("`n","").replace("`r","").replace(" ", "")
 
-$test_shell_number = Test-Path variable:global:shell_number
-$test_sync_dir = Test-Path $env:temp\ps_sync
-if($test_shell_number -eq $FALSE)
-    {
-      $shell_number = numInstances PowerShell
-    }
-
-if($test_sync_dir -eq $FALSE)
-    {
-        mkdir $env:temp\ps_sync;
-    }
-
+# overwrite function for the cd alias. cd + write the new dic to file together with id
 function log_cd()
     {
         param(
-                $path
+                $dic
              )
-        Write-Host Test
-        Set-Location $path
-        $pwd.path > $env:temp\ps_sync\[string]$shell_number
+        push-location $dic
+        $path = $pwd.path.replace("`n","").replace("`r","")
+        "$id,$path" | out-file -filepath $env:temp\ps_sync -append -width 200
     }
 
 function recover_d
     {
-        param(
-                $number
-             )
-        $d = Get-Content $env:temp\ps_sync\$number
-        pushd $d
+        $d = import-csv $env:temp\ps_sync -header ID,dic
+        write-host $d
+        $f = $d | Where-Object -FilterScript { $_.ID -ne $id } | Select-Object -last 1
+        push-location $f.dic
     }
 
 Remove-Item alias:\cd
