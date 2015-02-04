@@ -16,12 +16,10 @@ function log_cd()
 function recover_d
     {
         $d = import-csv $env:temp\ps_sync -header ID,dic
-        write-host $d
         $f = $d | Where-Object -FilterScript { $_.ID -ne $id } | Select-Object -last 1
         push-location $f.dic
     }
 
 Remove-Item alias:\cd
 New-Alias cd log_cd
-Remove-Item alias:\rec
 New-Alias rec recover_d
